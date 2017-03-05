@@ -33,13 +33,23 @@ public class Trie {
 		private Character value;
 
 		/**
+		 * IsEnd is true if the node is at the end char of a string that is
+		 * inserted into tree.
+		 */
+		private boolean isEnd;
+
+		/**
 		 * Constructor foe the node class. Uses the parameter VAL to initialize
 		 * the member `value`.
 		 * 
 		 * @param val
+		 *            The value of this node.
+		 * @param isEnd
+		 *            True if this is instance is the last char of a string.
 		 */
-		public Node(Character val) {
+		public Node(Character val, boolean isEnd) {
 			this.value = val;
+			this.isEnd = isEnd;
 			this.children = new HashMap<>();
 		}
 
@@ -61,24 +71,21 @@ public class Trie {
 		 */
 		public List<String> accumulateChildren() {
 			ArrayList<String> accumulated = new ArrayList<String>();
-
 			// Get all the string gathered up from child nodes.
-			boolean hasChild = false;
 			for (Node child : this.children.values()) {
 				if (child != null) {
-					hasChild = true;
 					accumulated.addAll(child.accumulateChildren());
 				}
 			}
 
 			if (this.value != null) { // Would only be false at root.
-				if (!hasChild) { // Happens when at the leaf
-					accumulated.add(this.value.toString());
-				} else {
-					// Add self.value to all string accumulated so far.
-					for (int i = 0; i < accumulated.size(); i++) {
-						accumulated.set(i, this.value + accumulated.get(i));
-					}
+				if (isEnd) { // Also add this value if it is the end
+					accumulated.add("");
+				}
+
+				// Add self.value to all string accumulated so far.
+				for (int i = 0; i < accumulated.size(); i++) {
+					accumulated.set(i, this.value + accumulated.get(i));
 				}
 			}
 
@@ -95,7 +102,7 @@ public class Trie {
 	 * Constructor for the Trie. Initialized the root.
 	 */
 	public Trie() {
-		this.root = new Node(null);
+		this.root = new Node(null, false); // Root is never an end.
 	}
 
 	/**
@@ -150,7 +157,8 @@ public class Trie {
 		// simply create a new one with the new value.
 		Node childNode = null;
 		if (!root.getChildren().containsKey(firstChar)) {
-			childNode = new Node(firstChar);
+			boolean isItEnd = newStr.length() == 1;
+			childNode = new Node(firstChar, isItEnd);
 			root.getChildren().put(firstChar, childNode);
 		} else {
 			childNode = root.getChildren().get(firstChar);
@@ -176,9 +184,15 @@ public class Trie {
 
 		ArrayList<String> searchResult = (ArrayList<String>) this
 				.search_helper(prefix.toLowerCase(), this.root);
+
+		// Should add the prefix except last character to all results.
+		int prefixLength = prefix.length();
+		String prefixToBeAdded = prefixLength > 1
+				? prefix.substring(0, prefixLength - 1) : "";
+
 		if (searchResult != null) {
 			for (int i = 0; i < searchResult.size(); i++) {
-				searchResult.set(i, prefix + searchResult.get(i));
+				searchResult.set(i, prefixToBeAdded + searchResult.get(i));
 			}
 		}
 
@@ -214,7 +228,7 @@ public class Trie {
 			return null;
 		}
 
-		// If string trying to route down the tree
+		// If string trying to go down the tree
 		Node childNode = null;
 		if (!root.getChildren().containsKey(firstChar)) {
 			// Can't find any search result.
